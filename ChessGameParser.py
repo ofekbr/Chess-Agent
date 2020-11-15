@@ -1,22 +1,40 @@
-import chess
+import chess.pgn
 import numpy as np
 
-arr=np.zeros((8,8))
+inputgames = []
+inputtimes = []
+inputmoves = []
 
-#White:
-#Pawn: 1
-#Knight: 2
-#Bishop: 3
-#Rook: 4
-#Queen: 5
-#King: 6
 
-#Black:
-#Pawn: 11
-#Knight: 12
-#Bishop: 13
-#Rook: 14
-#Queen: 15
-#King: 16
+with open("test_games.pgn") as pgn:
+    game=chess.pgn.read_game(pgn)
+    while game:
+        board=game.board()
 
-print(arr)
+        for move in game.mainline_moves():
+            inputgames.append(board.__str__())
+            inputmoves.append(move.__str__())
+            board.push(move)
+
+        for node in game.mainline():
+            if node.next() and node.next().next():
+                inputtimes.append(node.clock()-node.next().next().clock())
+
+        inputgames = inputgames[:-2]
+        inputmoves = inputmoves[:-2]
+
+        game = chess.pgn.read_game(pgn)
+
+print(len(inputmoves))
+print(len(inputgames))
+print(len(inputtimes))
+
+inputList=[]
+for i in range(len(inputmoves)):
+    inputList.append([inputgames[i],inputmoves[i],inputtimes[i]])
+
+arr=np.array(inputList);
+
+
+
+
