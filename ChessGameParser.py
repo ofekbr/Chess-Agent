@@ -1,11 +1,11 @@
 import chess.pgn
 import numpy as np
 from torch import nn, optim
-import torch.nn.functional as F
 from torch.utils import data
 import torch
 import matplotlib.pyplot as plt
 
+engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
@@ -13,9 +13,10 @@ class NeuralNetwork(nn.Module):
         Declare layers for the model
         """
         super().__init__()
-        self.fc1 = nn.Linear(64, 24)
-        self.fc2 = nn.Linear(24,8)
-        self.fc3 = nn.Linear(8, 1)
+        self.fc1 = nn.Linear(1536, 256)
+        self.fc2 = nn.Linear(256, 64)
+        self.fc3 = nn.Linear(64, 8)
+        self.fc4 = nn.Linear(8, 1)
 
     def forward(self, x):
         """
@@ -23,12 +24,15 @@ class NeuralNetwork(nn.Module):
         """
         x = torch.tanh(self.fc1(x))
         x = torch.tanh(self.fc2(x))
-        return torch.tanh(self.fc3(x))
+        x = torch.tanh(self.fc3(x))
+        x = torch.tanh(self.fc4(x))
+        return x
 
 
 input_games = []
 input_times = []
 input_moves = []
+#input_scores = []
 
 
 def split(word):
@@ -37,24 +41,39 @@ def split(word):
 
 with open("test_games.pgn") as pgn:
     game = chess.pgn.read_game(pgn)
-    pieces_dict = {'P': 1, 'R': 2, 'Q': 3, 'B': 4, 'N': 5, 'K': 6, '.': 0,
-                   'p': -1, 'r': -2, 'q': -3, 'b': -4, 'n': -5, 'k': -6}
+    pieces_dict = {'P': 0, 'R': 1, 'Q': 2, 'B': 3, 'N': 4, 'K': 5, '.': -1,
+                   'p': 6, 'r': 7, 'q': 8, 'b': 9, 'n': 10, 'k': 11}
     while game:
         try:
             board = game.board()
             temp_games = []
             temp_moves = []
             temp_times = []
+            #temp_scores= []
 
             for move in game.mainline_moves():
+                #try:
+                #    info = engine.analyse(board, chess.engine.Limit(time=0.1))
+                #    temp_scores.append(info['score'].relative.cp)
+                #except:
+                #    pass
                 temp_char_list = split(board.__str__())
                 temp_list = []
+                init_board = np.zeros((24, 8, 8))
+                row, col = 0, 0
                 for char in temp_char_list:
-                    if char == ' ' or char == '\n':
+                    if char == ' ' or char == '.':
+                        if(char == '.'):
+                            col+=1
+                    elif char == '\n':
+                        row += 1
+                        col = 0
                         continue
                     else:
-                        temp_list.append(pieces_dict[char])
-                temp_games.append(temp_list)
+                        init_board[pieces_dict[char]][row][col] = 1
+                        col += 1
+                        # temp_list.append(pieces_dict[char])
+                temp_games.append(init_board)
                 temp_moves.append(move.__str__())
                 board.push(move)
 
@@ -62,28 +81,32 @@ with open("test_games.pgn") as pgn:
                 if node.next() and node.next().next():
                     temp_times.append(node.clock() - node.next().next().clock())
 
+            for i in range(1, len(temp_games)):
+                for j in range(12):
+                    temp_games[i-1][j+12] = temp_games[i][j]
             temp_games = temp_games[:-2]
             temp_moves = temp_moves[:-2]
             input_moves += temp_moves
             input_games += temp_games
             input_times += temp_times
+            #input_scores += temp_scores
         except:
             pass
         game = chess.pgn.read_game(pgn)
-
 print(len(input_moves))
 print(len(input_games))
 print(len(input_times))
+#print(len(input_scores))
 
 input_moves = input_moves[:-48]
 input_games = input_games[:-48]
 input_times = input_times[:-48]
-
+"""
 min_game = min(input_games)
 max_game = max(input_games)
 min_time = min(input_times)
 max_time = max(input_times)
-"""
+
 global_min=999999
 global_max=0
 for i in range(len(input_games)):
@@ -101,7 +124,9 @@ for i in range(len(input_times)):
     v = input_times[i]   # foo[:, -1] for the last column
     input_times[i] = (v - min_time) / (max_time - min_time)
 """
-tensor_games = torch.Tensor(input_games)
+npArray = np.array(input_games)
+tensor_games= np.reshape(npArray, (11200,1536))
+tensor_games = torch.Tensor(tensor_games)
 # tensor_moves = torch.Tensor(input_moves)
 tensor_times = torch.Tensor(input_times)
 
