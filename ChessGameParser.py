@@ -22,7 +22,7 @@ class NeuralNetwork(nn.Module):
         """
         Forward pass through the network, returns log_softmax values
         """
-        x = torch.relu(self.fc1(x))
+        x = (self.fc1(x))
         return x
 
 
@@ -40,6 +40,9 @@ with open("test_games.pgn") as pgn:
     pieces_dict = {'P': 0, 'R': 1, 'Q': 2, 'B': 3, 'N': 4, 'K': 5, '.': -1,
                    'p': 6, 'r': 7, 'q': 8, 'b': 9, 'n': 10, 'k': 11}
     while game:
+        if (game.headers['Event'] != 'Rated Classical game') or ('+0' not in game.headers['TimeControl']) :
+            game = chess.pgn.read_game(pgn)
+            continue
         try:
             board = game.board()
             temp_moves_available = []
@@ -87,9 +90,9 @@ print(len(input_threats))
 print(len(input_moves_available))
 print(len(input_times))
 
-input_threats = input_threats[:-48]
-input_moves_available = input_moves_available[:-48]
-input_times = input_times[:-48]
+input_threats = input_threats[:-31]
+input_moves_available = input_moves_available[:-31]
+input_times = input_times[:-31]
 
 npArray1 = np.array(input_threats)
 npArray2 = np.array(input_moves_available)
@@ -112,15 +115,14 @@ tensor_games = torch.Tensor(npArray3)
 # tensor_moves = torch.Tensor(input_moves)
 tensor_times = torch.Tensor(input_times)
 
-
 my_dataset = data.TensorDataset(tensor_games, tensor_times)
 my_dataloader = data.DataLoader(my_dataset)
 
 model = NeuralNetwork()
-training_data, validation_data = data.random_split(my_dataset, [9024, 2176])
+training_data, validation_data = data.random_split(my_dataset, [1088, 256])
 train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
 val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
-learning_rate = 0.0001
+learning_rate = 0.001
 epochs = 200
 optimizer = optim.Adam(model.parameters(), learning_rate)
 criterion = nn.MSELoss()
@@ -149,6 +151,9 @@ def train_model(model, optimizer, criterion, epochs, train_loader, val_loader):
                 for images, labels in val_loader:
                     output = model.forward(images)
                     new_labels = np.reshape(labels, (64, 1))
+                    if e==199:
+                        for i,j in zip (output,new_labels):
+                            print(str(i[0])+" "+str(j[0]))
                     val_loss = criterion(output, new_labels)
                 running_val_loss += val_loss.item()
 
@@ -156,9 +161,9 @@ def train_model(model, optimizer, criterion, epochs, train_loader, val_loader):
         train_losses.append(running_loss / len(train_loader))
         val_losses.append(running_val_loss / len(val_loader))
 
-        print("Epoch: {}/{}.. ".format(e + 1, epochs),
-              "Training Loss: {:.3f}.. ".format(running_loss / len(train_loader)),
-              "Validation Loss: {:.3f}.. ".format(running_val_loss / len(val_loader)))
+        # print("Epoch: {}/{}.. ".format(e + 1, epochs),
+        #       "Training Loss: {:.3f}.. ".format(running_loss / len(train_loader)),
+        #       "Validation Loss: {:.3f}.. ".format(running_val_loss / len(val_loader)))
 
     return train_losses, val_losses
 
@@ -170,3 +175,5 @@ for i in range(200):
 plt.plot(list, train_losses)
 plt.plot(list, val_losses)
 plt.show()
+
+
