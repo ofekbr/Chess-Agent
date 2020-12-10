@@ -211,8 +211,8 @@ def nnTrain(threats_path,moves_available_path,clock_path,std_path,mean_path,time
     input_moves_available=np.loadtxt(moves_available_path,dtype=int).tolist()
     input_clock=np.loadtxt(clock_path,dtype=int).tolist()
     input_std=np.loadtxt(std_path).tolist()
-    input_mean=np.loadtxt(threats_path).tolist()
-    input_times=np.loadtxt(threats_path,dtype=int)
+    input_mean=np.loadtxt(mean_path).tolist()
+    input_times=np.loadtxt(times_path,dtype=int)
 
 
 
