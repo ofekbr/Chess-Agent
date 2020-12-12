@@ -6,8 +6,6 @@ from torch.utils import data
 import torch
 import matplotlib.pyplot as plt
 from chess import engine
-from timeit import default_timer as timer
-from datetime import timedelta
 
 
 class NeuralNetwork(nn.Module):
@@ -26,8 +24,104 @@ class NeuralNetwork(nn.Module):
         return x
 
 
-engine = chess.engine.SimpleEngine.popen_uci("stockfish_20090216_x64")
-early_game_cut = 12
+def nnTrain(threats_path, moves_available_path, clock_path, std_path, mean_path, times_path):
+    input_threats = np.loadtxt(threats_path, dtype=int).tolist()
+    input_moves_available = np.loadtxt(moves_available_path, dtype=int).tolist()
+    input_clock = np.loadtxt(clock_path, dtype=int).tolist()
+    input_std = np.loadtxt(std_path).tolist()
+    input_mean = np.loadtxt(mean_path).tolist()
+    input_times = np.loadtxt(times_path, dtype=int)
+
+    print(len(input_threats))
+    print(len(input_moves_available))
+    print(len(input_clock))
+    print(len(input_std))
+    print(len(input_mean))
+    print(len(input_times))
+
+    input_threats = input_threats[:-13]
+    input_moves_available = input_moves_available[:-13]
+    input_clock = input_clock[:-13]
+    input_times = input_times[:-13]
+
+    threat_array = np.array(input_threats)
+    moves_available_array = np.array(input_moves_available)
+    clock_array = np.array(input_clock)
+    complete_array = np.vstack((threat_array, moves_available_array, clock_array)).transpose()
+    complete_array = np.insert(complete_array, 0, values=1, axis=1)  # Insert values before column 3
+    complete_array = complete_array.astype(float)
+
+    for i in range(1, complete_array.shape[1]):
+        column = complete_array[:, i]
+        maxC = np.amax(column)
+        minC = np.amin(column)
+        if maxC > minC:
+            complete_array[:, i] = ((column - minC) / (maxC - minC)) * (1 - (0)) + (0)
+
+    # shuffler = np.random.permutation(npArray3.shape[0])
+    # npArray3 = npArray3[shuffler]
+    # input_times = np.array(input_times)[shuffler]
+
+    tensor_games = torch.Tensor(complete_array)
+    tensor_times = torch.Tensor(input_times)
+
+    my_dataset = data.TensorDataset(tensor_games, tensor_times)
+
+    model = NeuralNetwork()
+    training_data, validation_data = data.random_split(my_dataset, [128000, 35008])
+    train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
+    val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
+    learning_rate = 0.0001
+    epochs = 15
+    optimizer = optim.Adam(model.parameters(), learning_rate)
+    criterion = nn.MSELoss()
+
+    def train_model(model, optimizer, criterion, epochs, train_loader, val_loader):
+        train_losses, val_losses = [], []
+        for e in range(epochs):
+            running_loss = 0
+            running_val_loss = 0
+            for images, labels in train_loader:
+                # Training pass
+                model.train()
+                optimizer.zero_grad()
+                output = model.forward(images)
+                new_labels = np.reshape(labels, (64, 1))
+                loss = criterion(output, new_labels)
+                loss.backward()
+                optimizer.step()
+
+                running_loss += loss.item()
+            else:
+                val_loss = 0
+                # 6.2 Evalaute model on validation at the end of each epoch.
+                with torch.no_grad():
+                    for images, labels in val_loader:
+                        output = model.forward(images)
+                        new_labels = np.reshape(labels, (64, 1))
+                        if e == 14:
+                            for i, j in zip(output, new_labels):
+                                print(str(i[0]) + " " + str(j[0]))
+                        val_loss = criterion(output, new_labels)
+                        running_val_loss += val_loss.item()
+
+                # 7. track train loss and validation loss
+            train_losses.append(running_loss / len(train_loader))
+            val_losses.append(running_val_loss / len(val_loader))
+
+            print("Epoch: {}/{}.. ".format(e + 1, epochs),
+                  "Training Loss: {:.3f}.. ".format(running_loss / len(train_loader)),
+                  "Validation Loss: {:.3f}.. ".format(running_val_loss / len(val_loader)))
+
+        return train_losses, val_losses
+
+    train_losses, val_losses = train_model(model, optimizer, criterion, epochs, train_loader, val_loader)
+    list = []
+    for i in range(15):
+        list.append(i)
+    plt.plot(list, train_losses)
+    plt.plot(list, val_losses)
+    plt.show()
 
 
 def parse_moves_available():
@@ -178,7 +272,6 @@ def parse_position():
 
     with open("classic_600+0_200_1800.pgn") as pgn:
         game = chess.pgn.read_game(pgn)
-        start = timer()
         i = 0
         skipper = 0
         while game:
@@ -195,11 +288,14 @@ def parse_position():
                         continue
                     move_scores = []
                     for el in list(board.legal_moves):
-                        info = engine.analyse(board, chess.engine.Limit(time=0.000001), root_moves=[el])
-                        t = info["score"].relative.cp
-                        # if t.startswith('#'):
-                        #     print(" eval = mate in ", t)
-                        # else:
+                        info = engine.analyse(board, chess.engine.Limit(time=0.001), root_moves=[el])
+                        try:
+                            t = info["score"].relative.cp
+                        except:
+                            if not white_turn:
+                                temp_mean = temp_mean[:-1]
+                                temp_std = temp_std[:-1]
+                            pass
                         if not white_turn:
                             t = -t
                         move_scores.append(round(t / 100., 2))
@@ -207,145 +303,76 @@ def parse_position():
                     moves_std = np.std(move_scores)
                     moves_mean = np.mean(move_scores)
 
-                    temp_mean += moves_mean
-                    temp_std += moves_std
+                    temp_mean.append(moves_mean)
+                    temp_std.append(moves_std)
                     white_turn = not white_turn
                     board.push(move)
-
                 temp_mean = temp_mean[:-2]
                 temp_std = temp_std[:-2]
-                input_mean += temp_mean
-                input_std += temp_std
-            except:
+                input_mean.append(temp_mean)
+                input_std.append(temp_std)
+            except Exception as e:
+                print(f"{e.__class__}")
                 pass
-            end = timer()
-            print(f" game number {i} out of 2401, it took {timedelta(seconds=end - start)}")
-            start = timer()
+            print(f" game number {i} out of 2401")
             i += 1
             game = chess.pgn.read_game(pgn)
             skipper = 0
 
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
-    f = open("std.txt", "w")
+    f = open("oldstd.txt", "w")
+    amount = len(input_std)
     for i, data in enumerate(input_std):
         f.write(str(data) + '\n')
-        print(f"printing data number {i}")
+        print(f"printed data number {i} out of {amount}")
     f.close()
 
-    f = open("mean.txt", "w")
+    f = open("oldmean.txt", "w")
     for i, data in enumerate(input_mean):
         f.write(str(data) + '\n')
-        print(f"printing data number {i}")
+        print(f"printing data number {i} out of {amount}")
     f.close()
 
 
+def orgenizer():
+    f = open("oldstd.txt")
+    std = []
+    while True:
+        line = eval(f.readline())
+        if not line:
+            break
+        for num in line:
+            std.append(num)
+    f.close()
+
+    f = open("std.txt", 'w')
+    for num in std:
+        f.write(f"{num}\n")
+    f.close()
+
+    f = open("oldmean.txt")
+    mean = []
+    while True:
+        line = eval(f.readline())
+        if not line:
+            break
+        for num in line:
+            mean.append(num)
+    f.close()
+
+    f = open("mean.txt", 'w')
+    for num in mean:
+        f.write(f"{num}\n")
+    f.close()
+
+
+# engine = chess.engine.SimpleEngine.popen_uci("stockfish_20090216_x64")
+early_game_cut = 12
 # parse_moves_available()
 # parse_threats()
 # parse_clock()
 # parse_times()
-parse_position()
-
-
-def nnTrain(threats_path,moves_available_path,clock_path,std_path,mean_path,times_path):
-    input_threats=np.loadtxt(threats_path,dtype=int).tolist()
-    input_moves_available=np.loadtxt(moves_available_path,dtype=int).tolist()
-    input_clock=np.loadtxt(clock_path,dtype=int).tolist()
-    input_std=np.loadtxt(std_path).tolist()
-    input_mean=np.loadtxt(mean_path).tolist()
-    input_times=np.loadtxt(times_path,dtype=int)
-
-    print(len(input_threats))
-    print(len(input_moves_available))
-    print(len(input_clock))
-    print(len(input_std))
-    print(len(input_mean))
-    print(len(input_times))
-
-    input_threats = input_threats[:-13]
-    input_moves_available = input_moves_available[:-13]
-    input_clock = input_clock[:-13]
-    input_times = input_times[:-13]
-
-    threat_array = np.array(input_threats)
-    moves_available_array = np.array(input_moves_available)
-    clock_array = np.array(input_clock)
-    complete_array = np.vstack((threat_array, moves_available_array, clock_array)).transpose()
-    complete_array = np.insert(complete_array, 0, values=1, axis=1) # Insert values before column 3
-    complete_array = complete_array.astype(float)
-
-    for i in range(1, complete_array.shape[1]):
-        column = complete_array[:, i]
-        maxC = np.amax(column)
-        minC = np.amin(column)
-        if maxC > minC:
-            complete_array[:, i] =((column - minC) / (maxC - minC)) * (1 - (0)) + (0)
-
-    #shuffler = np.random.permutation(npArray3.shape[0])
-    #npArray3 = npArray3[shuffler]
-    #input_times = np.array(input_times)[shuffler]
-
-    tensor_games = torch.Tensor(complete_array)
-    tensor_times = torch.Tensor(input_times)
-
-    my_dataset = data.TensorDataset(tensor_games, tensor_times)
-
-    model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [128000, 35008])
-    train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
-    val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
-    learning_rate = 0.0001
-    epochs = 15
-    optimizer = optim.Adam(model.parameters(), learning_rate)
-    criterion = nn.MSELoss()
-
-
-    def train_model(model, optimizer, criterion, epochs, train_loader, val_loader):
-        train_losses, val_losses = [], []
-        for e in range(epochs):
-            running_loss = 0
-            running_val_loss = 0
-            for images, labels in train_loader:
-                # Training pass
-                model.train()
-                optimizer.zero_grad()
-                output = model.forward(images)
-                new_labels = np.reshape(labels, (64, 1))
-                loss = criterion(output, new_labels)
-                loss.backward()
-                optimizer.step()
-
-                running_loss += loss.item()
-            else:
-                val_loss = 0
-                # 6.2 Evalaute model on validation at the end of each epoch.
-                with torch.no_grad():
-                    for images, labels in val_loader:
-                        output = model.forward(images)
-                        new_labels = np.reshape(labels, (64, 1))
-                        if e == 14:
-                            for i,j in zip (output,new_labels):
-                                print(str(i[0])+" "+str(j[0]))
-                        val_loss = criterion(output, new_labels)
-                        running_val_loss += val_loss.item()
-
-                # 7. track train loss and validation loss
-            train_losses.append(running_loss / len(train_loader))
-            val_losses.append(running_val_loss / len(val_loader))
-
-            print("Epoch: {}/{}.. ".format(e + 1, epochs),
-                   "Training Loss: {:.3f}.. ".format(running_loss / len(train_loader)),
-                   "Validation Loss: {:.3f}.. ".format(running_val_loss / len(val_loader)))
-
-        return train_losses, val_losses
-
-
-    train_losses, val_losses = train_model(model, optimizer, criterion, epochs, train_loader, val_loader)
-    list = []
-    for i in range(15):
-        list.append(i)
-    plt.plot(list, train_losses)
-    plt.plot(list, val_losses)
-    plt.show()
-
-
+# parse_position()
+orgenizer()
+# engine.quit()
