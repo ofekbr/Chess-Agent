@@ -19,7 +19,7 @@ class NeuralNetwork(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(6, 128)
         self.fc2 = nn.Linear(128, 32)
-        self.fc3 = nn.Linear(32, 1)
+        self.fc3 = nn.Linear(32, 3)
         self.norm1 = nn.BatchNorm1d(128)
         self.norm2 = nn.BatchNorm1d(32)
         self.dropout = nn.Dropout(0.2)
@@ -34,8 +34,8 @@ class NeuralNetwork(nn.Module):
         x = F.tanh(x)
         x = self.dropout(x)
         x = self.fc3(x)
+        x = F.log_softmax(x, dim=1)
         return x
-
 
 
 
@@ -50,7 +50,15 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     input_move_num = np.loadtxt(move_num_path, dtype=int).tolist()
     input_materials = np.loadtxt(materials_path, dtype=int).tolist()
     input_times = np.loadtxt(times_path, dtype=int)
-
+    temp_input_times=np.zeros((len(input_times)),dtype=int)
+    for i in range(len(input_times)):
+        if(i<=5):
+            temp_input_times[i]=1
+        elif(i<=10):
+            temp_input_times[i]=2
+        else:
+            temp_input_times[i]=3
+    input_times=temp_input_times
     print(len(input_threats))
     print(len(input_moves_available))
     print(len(input_clock))
@@ -103,12 +111,12 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     learning_rate = 0.001
     epochs = 10
     optimizer = optim.Adam(model.parameters(), learning_rate)
-    criterion = nn.MSELoss()
+    criterion = nn.NLLLoss()
 
-    sum = 0
-    for i in training_data:
-        sum += int(i[1])
-    avg = sum / len(training_data)
+    # sum = 0
+    # for i in training_data:
+    #     sum += int(i[1])
+    # avg = sum / len(training_data)
 
     def train_model(model, optimizer, criterion, epochs, train_loader, val_loader):
         train_losses, val_losses, avg_losses = [], [], []
@@ -121,8 +129,9 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
                 model.train()
                 optimizer.zero_grad()
                 output = model.forward(images)
-                new_labels = np.reshape(labels, (64, 1))
-                loss = criterion(output, new_labels)
+                labels = torch.squeeze(labels)
+                labels = labels.type(torch.LongTensor)
+                loss = criterion(output, labels)
                 loss.backward()
                 optimizer.step()
 
