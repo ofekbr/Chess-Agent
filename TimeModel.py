@@ -37,9 +37,6 @@ class NeuralNetwork(nn.Module):
         return x
 
 
-
-
-
 def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num_path, materials_path, times_path):
     torch.manual_seed(0)
 
