@@ -12,11 +12,12 @@ from datetime import timedelta
 
 engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 early_game_cut = 12
+gamefile = "long_400_2000.pgn"
 
 
 def parse_moves_available():
     input_moves_available = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         i = 0
         skipper = 0
@@ -54,7 +55,7 @@ def parse_moves_available():
 
 def parse_threats():
     input_threats = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
         while game:
@@ -97,7 +98,7 @@ def parse_threats():
 
 def parse_clock():
     input_clock = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
         while game:
@@ -129,7 +130,7 @@ def parse_clock():
 
 def parse_times():
     input_times = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
         while game:
@@ -158,19 +159,20 @@ def parse_times():
 
 def parse_taken():
     input_taken = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
         while game:
             try:
                 board = game.board()
                 temp_taken = []
-                move_list = game.mainline().__str__().split('}')
-                for i in range(12, len(move_list)):
+                move_list=game.mainline().__str__().split('}')
+                for i in range(12,len(move_list)):
                     if 'x' in move_list[i]:
                         temp_taken.append(1)
                     else:
                         temp_taken.append(0)
+
 
                 temp_taken = temp_taken[:-3]
                 input_taken += temp_taken
@@ -193,7 +195,7 @@ def parse_position():
     input_mean = []
     input_std = []
 
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         start = timer()
         i = 0
@@ -259,13 +261,13 @@ def parse_position():
 
 def parse_moves_num():
     moves_num = []
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
         i = 1
         while game:
             print("game: ", i)
-            i = i + 1
+            i=i+1
             try:
                 board = game.board()
                 temp_count = []
@@ -293,7 +295,7 @@ def parse_moves_num():
     f.close()
 
 
-def material_diff():
+def parse_material_diff():
     skipper = 0
     pieces_dict = {
         'r': 1276, 'R': 1276,
@@ -304,10 +306,10 @@ def material_diff():
     }
     input_values = []
     i = 0
-    with open("classic_600+0_200_1800.pgn") as pgn:
+    with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         while game:
-            i += 1
+            i+=1
             temp_count = []
             print(f"game number {i} out of 2401")
             white_turn = True
@@ -345,3 +347,11 @@ def material_diff():
             f.write(str(data) + '\n')
             print(f"printing data number {i}")
         f.close()
+
+parse_times()
+parse_clock()
+parse_taken()
+parse_threats()
+parse_material_diff()
+parse_moves_num()
+parse_moves_available()
