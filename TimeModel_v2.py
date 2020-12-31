@@ -27,17 +27,15 @@ class NeuralNetwork(nn.Module):
     def forward(self, x):
         x = self.fc1(x)
         x = self.norm1(x)
-        x = F.tanh(x)
+        x = F.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)
         x = self.norm2(x)
-        x = F.tanh(x)
+        x = F.relu(x)
         x = self.dropout(x)
         x = self.fc3(x)
         x = F.log_softmax(x, dim=1)
         return x
-
-
 
 
 def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num_path, materials_path, times_path):
@@ -50,15 +48,17 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     input_move_num = np.loadtxt(move_num_path, dtype=int).tolist()
     input_materials = np.loadtxt(materials_path, dtype=int).tolist()
     input_times = np.loadtxt(times_path, dtype=int)
-    temp_input_times=np.zeros((len(input_times)),dtype=int)
+    temp_input_times = np.zeros((len(input_times)), dtype=int)
+    mean = np.mean(input_times)
+    std = np.std(input_times)
     for i in range(len(input_times)):
-        if(i<=5):
-            temp_input_times[i]=1
-        elif(i<=10):
-            temp_input_times[i]=2
+        if input_times[i] <= 4:
+            temp_input_times[i] = 0
+        elif input_times[i] <= 10:
+            temp_input_times[i] = 1
         else:
-            temp_input_times[i]=3
-    input_times=temp_input_times
+            temp_input_times[i] = 2
+    input_times = temp_input_times
     print(len(input_threats))
     print(len(input_moves_available))
     print(len(input_clock))
@@ -67,13 +67,13 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     print(len(input_materials))
     print(len(input_times))
 
-    input_threats = input_threats[:-3]
-    input_moves_available = input_moves_available[:-3]
-    input_clock = input_clock[:-3]
-    input_times = input_times[:-3]
-    input_move_num = input_move_num[:-3]
-    input_materials = input_materials[:-3]
-    input_taken = input_taken[:-3]
+    # input_threats = input_threats[:-3]
+    # input_moves_available = input_moves_available[:-3]
+    # input_clock = input_clock[:-3]
+    # input_times = input_times[:-3]
+    # input_move_num = input_move_num[:-3]
+    # input_materials = input_materials[:-3]
+    # input_taken = input_taken[:-3]
 
     threat_array = np.array(input_threats)
     moves_available_array = np.array(input_moves_available)
@@ -105,13 +105,14 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
 
     model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [307200, 80960])
+    training_data, validation_data = data.random_split(my_dataset, [342032, 85508])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
     learning_rate = 0.001
     epochs = 10
     optimizer = optim.Adam(model.parameters(), learning_rate)
-    criterion = nn.NLLLoss()
+    #weight = torch.tensor([1.0, 1.0, 1.0])
+    criterion = nn.NLLLoss()#weight=weight
 
     # sum = 0
     # for i in training_data:
@@ -139,18 +140,23 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
             else:
                 val_loss = 0
                 # 6.2 Evalaute model on validation at the end of each epoch.
+                accuracy = 0
                 with torch.no_grad():
                     for images, labels in val_loader:
                         output = model.forward(images)
-                        new_labels = np.reshape(labels, (64, 1))
-                        if e == 9:
-                            for image,i,j in zip (images,output,new_labels):
-                                print(str(image)+" "+str(i[0])+" "+str(j[0]))
-                        avg_tensor = torch.tensor(np.full((64, 1), avg))
-                        avg_loss = criterion(avg_tensor, new_labels)
-                        val_loss = criterion(output, new_labels)
+                        labels = torch.squeeze(labels)
+                        labels = labels.type(torch.LongTensor)
+                        for image, i, j in zip(images, output, labels):
+                            if str(int(np.argmax(i))) == str(int(j)):
+                                accuracy += 1
+                        if e == epochs - 1:
+                            for image, i, j in zip(images, output, labels):
+                                print(str(image) + " " + str(int(np.argmax(i))) + " " + str(int(j)))
+                        # avg_tensor = torch.tensor(np.full((64, 1), avg))
+                        # avg_loss = criterion(avg_tensor, new_labels)
+                        val_loss = criterion(output, labels)
                         running_val_loss += val_loss.item()
-                        running_avg_loss += avg_loss.item()
+                        # running_avg_loss += avg_loss.item()
 
                 # 7. track train loss and validation loss
             train_losses.append(running_loss / len(train_loader))
@@ -160,6 +166,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
             print("Epoch: {}/{}.. ".format(e + 1, epochs),
                   "Training Loss: {:.3f}.. ".format(running_loss / len(train_loader)),
                   "Validation Loss: {:.3f}.. ".format(running_val_loss / len(val_loader)),
+                  "Accuracy: {:.3f}.. ".format(accuracy / len(val_loader)),
                   "Average Loss: {:.3f}.. ".format(running_avg_loss / len(val_loader)))
 
         return train_losses, val_losses
