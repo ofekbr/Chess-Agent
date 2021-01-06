@@ -10,9 +10,9 @@ from chess import engine
 from timeit import default_timer as timer
 from datetime import timedelta
 
-engine = chess.engine.SimpleEngine.popen_uci("stockfish")
+# engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 early_game_cut = 12
-gamefile = "long_400_2000.pgn"
+gamefile = "1800sec_400_2000.pgn"
 
 
 def parse_moves_available():
