@@ -348,10 +348,41 @@ def parse_material_diff():
             print(f"printing data number {i}")
         f.close()
 
-parse_times()
-parse_clock()
-parse_taken()
-parse_threats()
-parse_material_diff()
-parse_moves_num()
-parse_moves_available()
+
+def parse_times_of_enemy():
+    input_times = []
+    with open(gamefile) as pgn:
+        game = chess.pgn.read_game(pgn)
+        skipper = 0
+        while game:
+            try:
+                temp_times = []
+                temp_times.append(0)
+                for node in game.mainline():
+                    if skipper < (early_game_cut):
+                        skipper += 1
+                        continue
+                    if node.next() and node.next().next():
+                        temp_times.append(node.clock() - node.next().next().clock())
+                temp_times.pop()
+                input_times += temp_times
+            except:
+                pass
+            game = chess.pgn.read_game(pgn)
+            skipper = 0
+    print(f"\n --------------------- done parsing ----------------------\n")
+    print(f"starting to write the file :")
+    f = open("times_of_enemy.txt", "w")
+    for i, data in enumerate(input_times):
+        f.write(str(data) + '\n')
+        print(f"printing data number {i}")
+    f.close()
+
+parse_times_of_enemy()
+# parse_times()
+# parse_clock()
+# parse_taken()
+# parse_threats()
+# parse_material_diff()
+# parse_moves_num()
+# parse_moves_available()

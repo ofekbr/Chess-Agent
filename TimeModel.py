@@ -56,13 +56,13 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     print(len(input_materials))
     print(len(input_times))
 
-    input_threats = input_threats[:-3]
-    input_moves_available = input_moves_available[:-3]
-    input_clock = input_clock[:-3]
-    input_times = input_times[:-3]
-    input_move_num = input_move_num[:-3]
-    input_materials = input_materials[:-3]
-    input_taken = input_taken[:-3]
+    input_threats = input_threats[:-17]
+    input_moves_available = input_moves_available[:-17]
+    input_clock = input_clock[:-17]
+    input_times = input_times[:-17]
+    input_move_num = input_move_num[:-17]
+    input_materials = input_materials[:-17]
+    input_taken = input_taken[:-17]
 
     threat_array = np.array(input_threats)
     moves_available_array = np.array(input_moves_available)
@@ -94,11 +94,11 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
 
     model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [307200, 80960])
+    training_data, validation_data = data.random_split(my_dataset, [12416, 2880])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
-    learning_rate = 0.001
-    epochs = 10
+    learning_rate = 0.01
+    epochs = 20
     optimizer = optim.Adam(model.parameters(), learning_rate)
     criterion = nn.MSELoss()
 
@@ -131,9 +131,9 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
                     for images, labels in val_loader:
                         output = model.forward(images)
                         new_labels = np.reshape(labels, (64, 1))
-                        if e == 9:
+                        if e == 19:
                             for image,i,j in zip (images,output,new_labels):
-                                print(str(image)+" "+str(i[0])+" "+str(j[0]))
+                                print(str(int(i[0]))+" "+str(int(j[0])))
                         avg_tensor = torch.tensor(np.full((64, 1), avg))
                         avg_loss = criterion(avg_tensor, new_labels)
                         val_loss = criterion(output, new_labels)
@@ -161,4 +161,4 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     plt.show()
 
 
-nnTrain('threats.txt', 'available_moves.txt', 'clock.txt', 'taken.txt', 'count_moves.txt', 'materials.txt', 'times.txt')
+nnTrain('new_threats.txt', 'new_available_moves.txt', 'new_clock.txt', 'new_taken.txt', 'new_count_moves.txt', 'new_materials.txt', 'new_times.txt')
