@@ -1,0 +1,42 @@
+import requests
+import json
+
+# jNfpRoEPKxpfsd4A
+api_key = 'jNfpRoEPKxpfsd4A'
+
+response = requests.get('https://lichess.org/api/account',
+                        headers={
+                            'Authorization': f'Bearer {api_key}'
+                            # Need this or you will get a 401: Not Authorized response
+                        })
+user_data = json.loads(response.content)
+
+print(user_data)
+
+response = requests.post('https://lichess.org/api/challenge/ofekbr',
+                        headers={
+                            'Authorization': f'Bearer {api_key}'
+                            # Need this or you will get a 401: Not Authorized response
+                        })
+
+game_challenge = json.loads(response.content)
+
+game_id=game_challenge['challenge']['id']
+
+move=input()
+
+while move:
+    board_request = requests.get(f'https://lichess.org/api/board/game/stream/{game_id}',
+                        headers={
+                            'Authorization': f'Bearer {api_key}'
+                            # Need this or you will get a 401: Not Authorized response
+                        })
+    board = json.loads(board_request.content)
+    print(board)
+    move_request = requests.post(f'https://lichess.org/api/board/game/{game_id}/move/{move}',
+                          headers={
+                            'Authorization': f'Bearer {api_key}'
+                            # Need this or you will get a 401: Not Authorized response
+                        })
+    move=input()
+
