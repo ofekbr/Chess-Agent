@@ -11,14 +11,25 @@ from timeit import default_timer as timer
 from datetime import timedelta
 
 # engine = chess.engine.SimpleEngine.popen_uci("stockfish")
-early_game_cut = 12
-gamefile = "1800sec_400_2000.pgn"
+first_game_cut = 10
+last_game_cut = 20
+gamefile = "masters.pgn"
 
+def number_of_moves_in_game(game):
+    moves=game.mainline_moves()
+    counter=0
+    for move in moves:
+        counter+=1
+    if (counter<20):
+        print(game)
+    return counter
 
 def parse_moves_available():
     input_moves_available = []
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
+        while (number_of_moves_in_game(game)<20):
+            game = chess.pgn.read_game(pgn)
         i = 0
         skipper = 0
         while game:
@@ -26,7 +37,7 @@ def parse_moves_available():
                 board = game.board()
                 temp_moves_available = []
                 for move in game.mainline_moves():
-                    if skipper < early_game_cut:
+                    if skipper < first_game_cut:
                         board.push(move)
                         skipper += 1
                         continue
@@ -34,22 +45,25 @@ def parse_moves_available():
                     temp_moves_available.append(board.legal_moves.count())
                     board.push(move)
 
-                temp_moves_available = temp_moves_available[:-2]
-                input_moves_available += temp_moves_available
-
+                    skipper += 1
+                    if(skipper>=last_game_cut):
+                        input_moves_available += temp_moves_available
+                        break
             except:
                 pass
             print(f" game number {i} out of 2401")
             i += 1
             game = chess.pgn.read_game(pgn)
+            while (game and number_of_moves_in_game(game) < 20):
+                game = chess.pgn.read_game(pgn)
             skipper = 0
-
+    #print("moves available:{")
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
-    f = open("available_moves.txt", "w")
+    f = open("masters_available_moves.txt", "w")
     for i, data in enumerate(input_moves_available):
         f.write(str(data) + '\n')
-        print(f"printing data number {i}")
+        #print(f"printing data number {i}")
     f.close()
 
 
@@ -58,12 +72,13 @@ def parse_threats():
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
+        k=0
         while game:
             try:
                 board = game.board()
                 temp_threats = []
                 for move in game.mainline_moves():
-                    if skipper < early_game_cut:
+                    if skipper < first_game_cut:
                         board.push(move)
                         skipper += 1
                         continue
@@ -77,19 +92,22 @@ def parse_threats():
                                 sum += len(board.attackers(1, chess.square(j, i)))
 
                     temp_threats.append(sum)
-
                     board.push(move)
+                    skipper += 1
+                    if (skipper >= last_game_cut):
+                        input_threats += temp_threats
+                        break
 
-                temp_threats = temp_threats[:-2]
-                input_threats += temp_threats
             except:
                 pass
+            print(f" game number {k} out of 2401")
+            k += 1
             game = chess.pgn.read_game(pgn)
             skipper = 0
 
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
-    f = open("threats.txt", "w")
+    f = open("masters_threats.txt", "w")
     for i, data in enumerate(input_threats):
         f.write(str(data) + '\n')
         print(f"printing data number {i}")
@@ -101,27 +119,33 @@ def parse_clock():
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
+        k=0
         while game:
             try:
-                board = game.board()
-
                 temp_clock = []
                 for node in game.mainline():
-                    if skipper < early_game_cut:
+                    if skipper < first_game_cut-2:
                         skipper += 1
                         continue
                     if node.next() and node.next().next():
                         temp_clock.append(node.clock())
 
-                input_clock += temp_clock
+                    skipper += 1
+                    if (skipper >= last_game_cut - 2):
+                        input_clock += temp_clock
+                        break
+
             except:
                 pass
+            print(f" game number {k} out of 2401")
+            k += 1
             game = chess.pgn.read_game(pgn)
             skipper = 0
 
+
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
-    f = open("clock.txt", "w")
+    f = open("masters_clock.txt", "w")
     for i, data in enumerate(input_clock):
         f.write(str(data) + '\n')
         print(f"printing data number {i}")
@@ -133,27 +157,34 @@ def parse_times():
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         skipper = 0
+        k = 0
         while game:
             try:
                 temp_times = []
                 for node in game.mainline():
-                    if skipper < early_game_cut:
-                        skipper += 1
+                    skipper += 1
+                    if skipper < first_game_cut-2:
+                        #skipper += 1
                         continue
                     if node.next() and node.next().next():
-                        temp_times.append(node.clock() - node.next().next().clock())
+                        temp_times.append(node.clock() - node.next().next().clock() + 30)
 
-                input_times += temp_times
-            except:
+                    if (skipper == last_game_cut-2-1):
+                        input_times += temp_times
+                        break
+            except Exception :
+                print()
                 pass
+            print(f" game number {k}")
+            k += 1
             game = chess.pgn.read_game(pgn)
             skipper = 0
     print(f"\n --------------------- done parsing ----------------------\n")
-    print(f"starting to write the file :")
-    f = open("times.txt", "w")
+    #print(f"starting to write the file :")
+    f = open("masters_times.txt", "w")
     for i, data in enumerate(input_times):
         f.write(str(data) + '\n')
-        print(f"printing data number {i}")
+        #print(f"printing data number {i}")
     f.close()
 
 
@@ -161,142 +192,139 @@ def parse_taken():
     input_taken = []
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
-        skipper = 0
         while game:
             try:
-                board = game.board()
                 temp_taken = []
                 move_list=game.mainline().__str__().split('}')
-                for i in range(12,len(move_list)):
-                    if 'x' in move_list[i]:
+                for i in range(first_game_cut, last_game_cut):
+                    if len(move_list)>i and 'x' in move_list[i]:
                         temp_taken.append(1)
-                    else:
+                    elif len(move_list)>i:
                         temp_taken.append(0)
-
-
-                temp_taken = temp_taken[:-3]
-                input_taken += temp_taken
+                    else:
+                        break
+                    if i == last_game_cut-1:
+                        input_taken += temp_taken
             except Exception as inst:
                 print(inst.__class__)
                 pass
             game = chess.pgn.read_game(pgn)
-            skipper = 0
 
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
-    f = open("taken.txt", "w")
+    f = open("masters_taken.txt", "w")
     for i, data in enumerate(input_taken):
         f.write(str(data) + '\n')
         print(f"printing data number {i}")
     f.close()
 
 
-def parse_position():
-    input_mean = []
-    input_std = []
+# def parse_position():
+#     input_mean = []
+#     input_std = []
+#
+#     with open(gamefile) as pgn:
+#         game = chess.pgn.read_game(pgn)
+#         start = timer()
+#         i = 0
+#         skipper = 0
+#         while game:
+#             try:
+#                 board = game.board()
+#                 temp_mean = []
+#                 temp_std = []
+#
+#                 white_turn = True
+#                 for move in game.mainline_moves():
+#                     if skipper < early_game_cut:
+#                         board.push(move)
+#                         skipper += 1
+#                         continue
+#                     move_scores = []
+#                     for el in list(board.legal_moves):
+#                         info = engine.analyse(board, chess.engine.Limit(time=0.000001), root_moves=[el])
+#                         t = info["score"].relative.cp
+#                         # if t.startswith('#'):
+#                         #     print(" eval = mate in ", t)
+#                         # else:
+#                         if not white_turn:
+#                             t = -t
+#                         move_scores.append(round(t / 100., 2))
+#                     move_scores = np.array(move_scores)
+#                     moves_std = np.std(move_scores)
+#                     moves_mean = np.mean(move_scores)
+#
+#                     temp_mean += moves_mean
+#                     temp_std += moves_std
+#                     white_turn = not white_turn
+#                     board.push(move)
+#
+#                 temp_mean = temp_mean[:-2]
+#                 temp_std = temp_std[:-2]
+#                 input_mean += temp_mean
+#                 input_std += temp_std
+#             except:
+#                 pass
+#             end = timer()
+#             print(f" game number {i} out of 2401, it took {timedelta(seconds=end - start)}")
+#             start = timer()
+#             i += 1
+#             game = chess.pgn.read_game(pgn)
+#             skipper = 0
+#
+#     print(f"\n --------------------- done parsing ----------------------\n")
+#     print(f"starting to write the file :")
+#     f = open("std.txt", "w")
+#     for i, data in enumerate(input_std):
+#         f.write(str(data) + '\n')
+#         print(f"printing data number {i}")
+#     f.close()
+#
+#     f = open("mean.txt", "w")
+#     for i, data in enumerate(input_mean):
+#         f.write(str(data) + '\n')
+#         print(f"printing data number {i}")
+#     f.close()
 
-    with open(gamefile) as pgn:
-        game = chess.pgn.read_game(pgn)
-        start = timer()
-        i = 0
-        skipper = 0
-        while game:
-            try:
-                board = game.board()
-                temp_mean = []
-                temp_std = []
 
-                white_turn = True
-                for move in game.mainline_moves():
-                    if skipper < early_game_cut:
-                        board.push(move)
-                        skipper += 1
-                        continue
-                    move_scores = []
-                    for el in list(board.legal_moves):
-                        info = engine.analyse(board, chess.engine.Limit(time=0.000001), root_moves=[el])
-                        t = info["score"].relative.cp
-                        # if t.startswith('#'):
-                        #     print(" eval = mate in ", t)
-                        # else:
-                        if not white_turn:
-                            t = -t
-                        move_scores.append(round(t / 100., 2))
-                    move_scores = np.array(move_scores)
-                    moves_std = np.std(move_scores)
-                    moves_mean = np.mean(move_scores)
-
-                    temp_mean += moves_mean
-                    temp_std += moves_std
-                    white_turn = not white_turn
-                    board.push(move)
-
-                temp_mean = temp_mean[:-2]
-                temp_std = temp_std[:-2]
-                input_mean += temp_mean
-                input_std += temp_std
-            except:
-                pass
-            end = timer()
-            print(f" game number {i} out of 2401, it took {timedelta(seconds=end - start)}")
-            start = timer()
-            i += 1
-            game = chess.pgn.read_game(pgn)
-            skipper = 0
-
-    print(f"\n --------------------- done parsing ----------------------\n")
-    print(f"starting to write the file :")
-    f = open("std.txt", "w")
-    for i, data in enumerate(input_std):
-        f.write(str(data) + '\n')
-        print(f"printing data number {i}")
-    f.close()
-
-    f = open("mean.txt", "w")
-    for i, data in enumerate(input_mean):
-        f.write(str(data) + '\n')
-        print(f"printing data number {i}")
-    f.close()
-
-
-def parse_moves_num():
-    moves_num = []
-    with open(gamefile) as pgn:
-        game = chess.pgn.read_game(pgn)
-        skipper = 0
-        i = 1
-        while game:
-            print("game: ", i)
-            i=i+1
-            try:
-                board = game.board()
-                temp_count = []
-                count = early_game_cut
-                for node in game.mainline():
-                    if skipper < early_game_cut:
-                        skipper += 1
-                        continue
-                    if node.next() and node.next().next():
-                        count = count + 1
-                        temp_count.append(count)
-
-                moves_num += temp_count
-            except:
-                pass
-            game = chess.pgn.read_game(pgn)
-            skipper = 0
-
-    print(f"\n --------------------- done parsing ----------------------\n")
-    print(f"starting to write the file :")
-    f = open("count_moves.txt", "w")
-    for i, data in enumerate(moves_num):
-        f.write(str(data) + '\n')
-        print(f"printing data number {i}")
-    f.close()
+# def parse_moves_num():
+#     moves_num = []
+#     with open(gamefile) as pgn:
+#         game = chess.pgn.read_game(pgn)
+#         skipper = 0
+#         i = 1
+#         while game:
+#             print("game: ", i)
+#             i=i+1
+#             try:
+#                 board = game.board()
+#                 temp_count = []
+#                 count = early_game_cut
+#                 for node in game.mainline():
+#                     if skipper < early_game_cut:
+#                         skipper += 1
+#                         continue
+#                     if node.next() and node.next().next():
+#                         count = count + 1
+#                         temp_count.append(count)
+#
+#                 moves_num += temp_count
+#             except:
+#                 pass
+#             game = chess.pgn.read_game(pgn)
+#             skipper = 0
+#
+#     print(f"\n --------------------- done parsing ----------------------\n")
+#     print(f"starting to write the file :")
+#     f = open("count_moves.txt", "w")
+#     for i, data in enumerate(moves_num):
+#         f.write(str(data) + '\n')
+#         print(f"printing data number {i}")
+#     f.close()
 
 
 def parse_material_diff():
-    skipper = 0
+    skipper_for_move = 0
     pieces_dict = {
         'r': 1276, 'R': 1276,
         'n': 781, 'N': 781,
@@ -309,15 +337,15 @@ def parse_material_diff():
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         while game:
-            i+=1
+            i += 1
             temp_count = []
-            print(f"game number {i} out of 2401")
+            #print(f"game number {i} out of 2401")
             white_turn = True
             board = game.board()
             for move in game.mainline_moves():
-                if skipper < early_game_cut:
+                skipper_for_move += 1
+                if skipper_for_move < first_game_cut:
                     board.push(move)
-                    skipper += 1
                     continue
                 white_sum = 0
                 black_sum = 0
@@ -334,55 +362,56 @@ def parse_material_diff():
                     temp_count.append(black_sum - white_sum)
                 white_turn = not white_turn
                 board.push(move)
-            temp_count = temp_count[:-2]
-            input_values += temp_count
-            skipper = 0
+                if (skipper_for_move == last_game_cut-1):
+                    input_values += temp_count
+                    break
+            skipper_for_move = 0
             game = chess.pgn.read_game(pgn)
 
         print(len(input_values))
         print(f"\n --------------------- done parsing ----------------------\n")
         print(f"starting to write the file :")
-        f = open("materials.txt", "w")
+        f = open("masters_materials.txt", "w")
         for i, data in enumerate(input_values):
             f.write(str(data) + '\n')
             print(f"printing data number {i}")
         f.close()
 
 
-def parse_times_of_enemy():
-    input_times = []
-    with open(gamefile) as pgn:
-        game = chess.pgn.read_game(pgn)
-        skipper = 0
-        while game:
-            try:
-                temp_times = []
-                temp_times.append(0)
-                for node in game.mainline():
-                    if skipper < (early_game_cut):
-                        skipper += 1
-                        continue
-                    if node.next() and node.next().next():
-                        temp_times.append(node.clock() - node.next().next().clock())
-                temp_times.pop()
-                input_times += temp_times
-            except:
-                pass
-            game = chess.pgn.read_game(pgn)
-            skipper = 0
-    print(f"\n --------------------- done parsing ----------------------\n")
-    print(f"starting to write the file :")
-    f = open("times_of_enemy.txt", "w")
-    for i, data in enumerate(input_times):
-        f.write(str(data) + '\n')
-        print(f"printing data number {i}")
-    f.close()
+# def parse_times_of_enemy():
+#     input_times = []
+#     with open(gamefile) as pgn:
+#         game = chess.pgn.read_game(pgn)
+#         skipper = 0
+#         while game:
+#             try:
+#                 temp_times = []
+#                 temp_times.append(0)
+#                 for node in game.mainline():
+#                     if skipper < (early_game_cut):
+#                         skipper += 1
+#                         continue
+#                     if node.next() and node.next().next():
+#                         temp_times.append(node.clock() - node.next().next().clock())
+#                 temp_times.pop()
+#                 input_times += temp_times
+#             except:
+#                 pass
+#             game = chess.pgn.read_game(pgn)
+#             skipper = 0
+#     print(f"\n --------------------- done parsing ----------------------\n")
+#     print(f"starting to write the file :")
+#     f = open("times_of_enemy.txt", "w")
+#     for i, data in enumerate(input_times):
+#         f.write(str(data) + '\n')
+#         print(f"printing data number {i}")
+#     f.close()
 
-parse_times_of_enemy()
-# parse_times()
-# parse_clock()
-# parse_taken()
-# parse_threats()
-# parse_material_diff()
-# parse_moves_num()
-# parse_moves_available()
+# parse_times_of_enemy() no
+parse_times() #3300 done
+# parse_clock() no
+# parse_taken() 3300 done
+# parse_threats() 3300 done
+# parse_material_diff() 3300 done
+# parse_moves_num() no
+# parse_moves_available() 3300 done

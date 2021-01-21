@@ -91,10 +91,20 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
         (threat_array, moves_available_array, clock_array, taken_array, move_num_array, input_materials)).transpose()
     complete_array = complete_array.astype(float)
 
+    for i in range(0, complete_array.shape[1]):
+        column = complete_array[:, i]
+        maxC = np.amax(column)
+        minC = np.amin(column)
+        if maxC > minC:
+            complete_array[:, i] = ((column - minC) / (maxC - minC)) * (1 - (-1)) + (-1)
+
+
     tensor_games = torch.Tensor(complete_array)
     tensor_times = torch.Tensor(input_times)
 
+
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
+
 
     model = NeuralNetwork()
     training_data, validation_data = data.random_split(my_dataset, [21000, 5058])
