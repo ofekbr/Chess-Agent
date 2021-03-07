@@ -56,13 +56,13 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     print(len(input_materials))
     print(len(input_times))
 
-    input_threats = input_threats[:-17]
-    input_moves_available = input_moves_available[:-17]
-    input_clock = input_clock[:-17]
-    input_times = input_times[:-17]
-    input_move_num = input_move_num[:-17]
-    input_materials = input_materials[:-17]
-    input_taken = input_taken[:-17]
+    input_threats = input_threats[:-36]
+    input_moves_available = input_moves_available[:-36]
+    input_clock = input_clock[:-36]
+    input_times = input_times[:-36]
+    input_move_num = input_move_num[:-36]
+    input_materials = input_materials[:-36]
+    input_taken = input_taken[:-36]
 
     threat_array = np.array(input_threats)
     moves_available_array = np.array(input_moves_available)
@@ -94,7 +94,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
 
     model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [12416, 2880])
+    training_data, validation_data = data.random_split(my_dataset, [2560, 704])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
     learning_rate = 0.01
@@ -161,4 +161,5 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     plt.show()
 
 
-nnTrain('new_threats.txt', 'new_available_moves.txt', 'new_clock.txt', 'new_taken.txt', 'new_count_moves.txt', 'new_materials.txt', 'new_times.txt')
+nnTrain('masters_threats.txt', 'masters_available_moves.txt', 'masters_clock.txt', 'masters_taken.txt',
+        'masters_moves.txt', 'masters_materials.txt', 'masters_times.txt')

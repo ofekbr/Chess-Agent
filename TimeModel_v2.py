@@ -53,7 +53,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     temp_input_times = np.zeros((len(input_times)), dtype=int)
     mean = np.mean(input_times)
     std = np.std(input_times)
-    top_first_class = 2
+    top_first_class = 10
     # top_second_class = 10
     # top_third_class = 35
     zeros = 0
@@ -107,13 +107,13 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
 
 
     model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [21000, 5058])
+    training_data, validation_data = data.random_split(my_dataset, [2900, 400])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=128, shuffle=True)
     learning_rate = 0.0005
     epochs = 10
     optimizer = optim.Adam(model.parameters(), learning_rate)
-    weight = torch.tensor([5.0, 1.0])
+    weight = torch.tensor([6.2, 1.0])
     criterion = nn.NLLLoss(weight=weight)  # weight=weight
 
     # sum = 0
@@ -185,5 +185,5 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     plt.show()
 
 
-nnTrain('new_threats.txt', 'new_available_moves.txt', 'new_clock.txt', 'new_taken.txt', 'new_count_moves.txt',
-        'new_materials.txt', 'new_times.txt')
+nnTrain('masters_threats.txt', 'masters_available_moves.txt', 'masters_clock.txt', 'masters_taken.txt', 'masters_moves.txt',
+        'masters_materials.txt', 'masters_times.txt')

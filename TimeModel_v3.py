@@ -1,11 +1,10 @@
-# First XGBoost model for Pima Indians dataset
 import numpy as np
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 
-def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num_path, materials_path,enemy_time_path,times_path):
+def nnTrain(threats_path, moves_available_path, taken_path, materials_path,times_path):
     input_threats = np.loadtxt(threats_path, dtype=int).tolist()
     input_moves_available = np.loadtxt(moves_available_path, dtype=int).tolist()
     #input_clock = np.loadtxt(clock_path, dtype=int).tolist()
@@ -15,9 +14,9 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     #input_enemy_times=np.loadtxt(enemy_time_path, dtype=int).tolist()
     input_times = np.loadtxt(times_path, dtype=int)
     temp_input_times = np.zeros((len(input_times)), dtype=int)
-    top_first_class = 20
-    top_second_class = 10
-    top_third_class = 30
+    top_first_class = 4
+    top_second_class = 20
+    top_third_class = 100
     zeros = 0
     ones = 0
     twos = 0
@@ -26,15 +25,15 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
         if input_times[i] <= top_first_class:
             temp_input_times[i] = 0
             zeros += 1
-        # elif input_times[i] <= top_second_class:
-        #     temp_input_times[i] = 1
-        #     ones += 1
-        # elif input_times[i] <= top_third_class:
-        #     temp_input_times[i] = 2
-        #     twos += 1
-        else:
+        elif input_times[i] <= top_second_class:
             temp_input_times[i] = 1
             ones += 1
+        elif input_times[i] <= top_third_class:
+            temp_input_times[i] = 2
+            twos += 1
+        else:
+            temp_input_times[i] = 3
+            threes += 1
 
     print(f'zeros = {zeros}    ones = {ones}     twos = {twos}      threes = {threes}')
     print(f'zeros = {zeros/len(input_threats)}    ones = {ones/len(input_threats)}      twos = {twos/len(input_threats)}     threes = {threes/len(input_threats)}')
@@ -69,13 +68,17 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     # split data into train and test sets
     seed = 7
     test_size = 0.1
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=test_size, random_state=seed)#
     # fit model no training data
     model = XGBClassifier()
     weights=[]
     for i in y_train:
         if i==0:
-            weights.append(3.5)
+            weights.append(15.851)
+        elif i==1:
+            weights.append(2.150)
+        elif i==2:
+            weights.append(1.244)
         else:
             weights.append(1)
 
@@ -89,5 +92,4 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
         print(f'prediction = {int(i)}   label = {int(j)}')
     print("Accuracy: %.2f%%" % (accuracy * 100.0))
 
-nnTrain('masters_threats.txt', 'masters_available_moves.txt', 'new_clock.txt', 'masters_taken.txt', 'new_count_moves.txt',
-        'masters_materials.txt','new_times_of_enemy.txt', 'masters_times.txt')
+nnTrain('masters_threats.txt', 'masters_available_moves.txt', 'masters_taken.txt','masters_materials.txt', 'masters_times.txt')
