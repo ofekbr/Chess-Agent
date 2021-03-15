@@ -428,7 +428,7 @@ def parse_times_of_enemy():
 # parse_times() #29287 done ---
 # parse_clock() #29240 done ---
 # parse_taken() #Not working ---
-# parse_threats()  # 29120 done
-# parse_material_diff() #29210 done ---
-# parse_moves_num() #3300 done ---
-parse_moves_available() #28780 done
+parse_threats()  # 29120 done
+# parse_material_diff() #28780 done
+# parse_moves_num() #28780 done
+# parse_moves_available() #28780 done
