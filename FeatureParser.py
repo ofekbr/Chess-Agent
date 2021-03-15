@@ -3,7 +3,7 @@ import chess.pgn
 # engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 first_game_cut = 10
 last_game_cut = 20
-gamefile = "masters2.pgn"
+gamefile = "masters3.pgn"
 
 from enum import Enum
 
@@ -26,9 +26,11 @@ def number_of_moves_in_game(game):
 
 def parse_moves_available():
     input_moves_available = []
+    counter = 0
     with open(gamefile) as pgn:
         game = chess.pgn.read_game(pgn)
         while (number_of_moves_in_game(game) < 20):
+            counter+=1
             game = chess.pgn.read_game(pgn)
         i = 0
         skipper = 0
@@ -50,11 +52,13 @@ def parse_moves_available():
                         input_moves_available += temp_moves_available
                         break
             except:
+                counter+=1
                 pass
             print(f" game number {i} out of 2401")
             i += 1
             game = chess.pgn.read_game(pgn)
             while (game and number_of_moves_in_game(game) < 20):
+                counter+=1
                 game = chess.pgn.read_game(pgn)
             skipper = 0
     # print("moves available:{")
@@ -65,6 +69,7 @@ def parse_moves_available():
         f.write(str(data) + '\n')
         # print(f"printing data number {i}")
     f.close()
+    print("Skipped Games" + str(counter))
 
 
 def parse_threats():
@@ -174,7 +179,7 @@ def parse_times():
                         # skipper += 1
                         continue
                     if node.next() and node.next().next():
-                        temp_times.append(node.clock() - node.next().next().clock() + 30)
+                        temp_times.append(node.clock() - node.next().next().clock())
 
                     if (skipper == last_game_cut - 2 - 1):
                         input_times += temp_times
@@ -419,11 +424,11 @@ def parse_times_of_enemy():
     f.close()
 
 
-# parse_times_of_enemy()
-# parse_times() #3300 done
-parse_clock() #7190 done
-# parse_taken() #Not working
-# parse_threats()  # 7200 done
-# parse_material_diff() #3300 done
-# parse_moves_num() #3300 done
-# parse_moves_available() #3300 done
+# parse_times_of_enemy() # 26339 ---
+# parse_times() #29287 done ---
+# parse_clock() #29240 done ---
+# parse_taken() #Not working ---
+# parse_threats()  # 29120 done
+# parse_material_diff() #29210 done ---
+# parse_moves_num() #3300 done ---
+parse_moves_available() #28780 done
