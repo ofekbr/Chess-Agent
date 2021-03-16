@@ -8,9 +8,6 @@ import matplotlib.pyplot as plt
 
 class NeuralNetwork(nn.Module):
     def __init__(self):
-        """
-        Declare layers for the model
-        """
         super().__init__()
         self.fc1 = nn.Linear(6, 512)
         self.fc2 = nn.Linear(512, 256)
@@ -61,14 +58,6 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     input_materials = np.loadtxt(materials_path, dtype=int).tolist()
     input_times = np.loadtxt(times_path, dtype=int)
 
-    print(len(input_threats))
-    print(len(input_moves_available))
-    print(len(input_clock))
-    print(len(input_taken))
-    print(len(input_move_num))
-    print(len(input_materials))
-    print(len(input_times))
-
     threat_array = np.array(input_threats)
     moves_available_array = np.array(input_moves_available)
     clock_array = np.array(input_clock)
@@ -80,6 +69,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
          input_materials_array)).transpose()
     complete_array = complete_array.astype(float)
 
+    # normalization
     for i in range(0, complete_array.shape[1]):
         column = complete_array[:, i]
         maxC = np.amax(column)
@@ -87,25 +77,30 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
         if maxC > minC:
             complete_array[:, i] = ((column - minC) / (maxC - minC)) * (1 - (-1)) + (-1)
 
+    # shuffle
     shuffler = np.random.permutation(complete_array.shape[0])
     complete_array = complete_array[shuffler]
     input_times = np.array(input_times)[shuffler]
 
+    # to tensor
     tensor_games = torch.Tensor(complete_array)
     tensor_times = torch.Tensor(input_times)
 
+    # training and validation
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
     train_size = int(0.85 * len(my_dataset))
     validate_size = len(my_dataset) - int(0.85 * len(my_dataset))
-    model = NeuralNetwork()
     training_data, validation_data = data.random_split(my_dataset, [train_size, validate_size])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=64, shuffle=False)
+
     learning_rate = 0.0002
     epochs = 30
+    model = NeuralNetwork()
     optimizer = optim.Adam(model.parameters(), learning_rate)
     criterion = nn.MSELoss()
 
+    # calculating average guess
     sum = 0
     for i in training_data:
         sum += int(i[1])
@@ -130,7 +125,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
 
                 running_loss += loss.item()
             else:
-                # 6.2 Evalaute model on validation at the end of each epoch.
+                # evalaute model on validation at the end of each epoch.
                 with torch.no_grad():
                     for images, labels in val_loader:
                         output = model.forward(images)
@@ -145,7 +140,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
                         running_val_loss += val_loss.item()
                         running_avg_loss += avg_loss.item()
 
-                # 7. track train loss and validation loss
+                # track train, validation and average loss
             train_losses.append(running_loss / len(train_loader))
             val_losses.append(running_val_loss / len(val_loader))
             avg_losses.append(running_avg_loss / len(val_loader))
@@ -170,7 +165,8 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
 
 nnTrain('atleast2400s_400diff_above2000elo/masters_threats.txt',
         'atleast2400s_400diff_above2000elo/masters_available_moves.txt',
-        'atleast2400s_400diff_above2000elo/masters_clock.txt', 'atleast2400s_400diff_above2000elo/masters_taken.txt',
+        'atleast2400s_400diff_above2000elo/masters_clock.txt',
+        'atleast2400s_400diff_above2000elo/masters_taken.txt',
         'atleast2400s_400diff_above2000elo/masters_moves.txt',
         'atleast2400s_400diff_above2000elo/masters_materials.txt',
         'atleast2400s_400diff_above2000elo/masters_times.txt')

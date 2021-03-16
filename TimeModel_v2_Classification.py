@@ -1,16 +1,9 @@
-import math
-
-import chess.pgn
 import numpy as np
-from matplotlib import transforms
 from torch import nn, optim
 from torch.utils import data
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-from chess import engine
-from timeit import default_timer as timer
-from datetime import timedelta
 
 
 class NeuralNetwork(nn.Module):
@@ -51,8 +44,6 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     input_materials = np.loadtxt(materials_path, dtype=int).tolist()
     input_times = np.loadtxt(times_path, dtype=int)
     temp_input_times = np.zeros((len(input_times)), dtype=int)
-    mean = np.mean(input_times)
-    std = np.std(input_times)
     top_first_class = 10
     # top_second_class = 10
     # top_third_class = 35
@@ -72,13 +63,6 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     print(f'zeros = {zeros}    ones = {ones}')
     print(f'zeros = {zeros/len(input_threats)}    ones = {ones/len(input_threats)}')
     input_times = temp_input_times
-    print(len(input_threats))
-    print(len(input_moves_available))
-    print(len(input_clock))
-    print(len(input_taken))
-    print(len(input_move_num))
-    print(len(input_materials))
-    print(len(input_times))
 
     threat_array = np.array(input_threats)
     moves_available_array = np.array(input_moves_available)
@@ -98,13 +82,10 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
         if maxC > minC:
             complete_array[:, i] = ((column - minC) / (maxC - minC)) * (1 - (-1)) + (-1)
 
-
     tensor_games = torch.Tensor(complete_array)
     tensor_times = torch.Tensor(input_times)
 
-
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
-
 
     model = NeuralNetwork()
     training_data, validation_data = data.random_split(my_dataset, [2900, 400])
@@ -114,7 +95,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     epochs = 10
     optimizer = optim.Adam(model.parameters(), learning_rate)
     weight = torch.tensor([6.2, 1.0])
-    criterion = nn.NLLLoss(weight=weight)  # weight=weight
+    criterion = nn.NLLLoss(weight=weight)
 
     # sum = 0
     # for i in training_data:
@@ -139,8 +120,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
 
                 running_loss += loss.item()
             else:
-                val_loss = 0
-                # 6.2 Evalaute model on validation at the end of each epoch.
+                # Evalaute model on validation at the end of each epoch.
                 accuracy = 0
                 close = 0
                 with torch.no_grad():
@@ -165,7 +145,7 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
                         val_loss = criterion(output, labels)
                         running_val_loss += val_loss.item()
 
-                # 7. track train loss and validation loss
+                # track train loss and validation loss
             train_losses.append(running_loss / len(train_loader))
             val_losses.append(running_val_loss / len(val_loader))
 
