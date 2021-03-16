@@ -185,5 +185,9 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     plt.show()
 
 
-nnTrain('masters_threats.txt', 'masters_available_moves.txt', 'masters_clock.txt', 'masters_taken.txt', 'masters_moves.txt',
-        'masters_materials.txt', 'masters_times.txt')
+nnTrain('atleast2400s_400diff_above2000elo/masters_threats.txt',
+        'atleast2400s_400diff_above2000elo/masters_available_moves.txt',
+        'atleast2400s_400diff_above2000elo/masters_clock.txt', 'atleast2400s_400diff_above2000elo/masters_taken.txt',
+        'atleast2400s_400diff_above2000elo/masters_moves.txt',
+        'atleast2400s_400diff_above2000elo/masters_materials.txt',
+        'atleast2400s_400diff_above2000elo/masters_times.txt')

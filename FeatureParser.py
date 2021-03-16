@@ -1,13 +1,12 @@
 import chess.pgn
+from enum import Enum
 
 # engine = chess.engine.SimpleEngine.popen_uci("stockfish")
 first_game_cut = 0
 last_game_cut = 20
 min_move_in_game = 20
-gamefile = "masters3.pgn"
+gamefile = "atleast2400s_400diff_above2000elo/atleast2400sec_400diff_above2000.pgn"
 bool_all_but_2 = True
-
-from enum import Enum
 
 
 class Color(Enum):
@@ -21,7 +20,7 @@ def number_of_moves_in_game(game):
     counter = 0
     for move in moves:
         counter += 1
-    if (counter < 20):
+    if counter < 20:
         print(game)
     return counter
 
@@ -38,7 +37,7 @@ def read_relevant_game(game, pgn):
     return game
 
 
-def print_to_file(array,file_name ):
+def print_to_file(array, file_name):
     print(f"\n --------------------- done parsing ----------------------\n")
     print(f"starting to write the file :")
     f = open(file_name, "w")
@@ -77,14 +76,14 @@ def parse_moves_available():
 
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_moves_available,"masters_available_moves.txt")
+    print_to_file(input_moves_available, "atleast2400s_400diff_above2000elo/masters_available_moves.txt")
 
 
 def parse_threats():
     input_threats = []
     game_number = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
         while game:
             try:
@@ -101,11 +100,11 @@ def parse_threats():
                         for j in range(8):
                             # on white's turn, if the pawn in the square is white check the black attackers
                             color = Color(board.color_at(chess.square(j, i)))
-                            if ((color == Color.White) and (turn == Color.White)):
+                            if (color == Color.White) and (turn == Color.White):
                                 # get the number of black attackers
-                                sum += len(board.attackers(0, chess.square(j, i)))
-                            elif ((color == Color.Black) and (turn == Color.Black)):
-                                sum += len(board.attackers(1, chess.square(j, i)))
+                                sum += len(board.attackers(False, chess.square(j, i)))
+                            elif (Color.Black == color) and (Color.Black == turn):
+                                sum += len(board.attackers(True, chess.square(j, i)))
 
                     temp_threats.append(sum)
                     board.push(move)
@@ -117,20 +116,20 @@ def parse_threats():
                 pass
             print(f" game number {game_number}")
             game_number += 1
-            game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+            game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_threats, "masters_threats.txt")
+    print_to_file(input_threats, "atleast2400s_400diff_above2000elo/masters_threats.txt")
 
 
 def parse_clock():
     input_clock = []
     game_number = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             try:
                 temp_clock = []
-                for i,node in enumerate(game.mainline()):
+                for i, node in enumerate(game.mainline()):
                     if i < first_game_cut:
                         continue
 
@@ -146,14 +145,14 @@ def parse_clock():
             game_number += 1
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_clock, "masters_clock.txt")
+    print_to_file(input_clock, "atleast2400s_400diff_above2000elo/masters_clock.txt")
 
 
 def parse_times():
     input_times = []
-    game_number=0
+    game_number = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             try:
                 temp_times = []
@@ -163,7 +162,7 @@ def parse_times():
                     if node.next() and node.next().next():
                         temp_times.append(node.clock() - node.next().next().clock())
 
-                    if (i == last_game_cut - 1):
+                    if i == last_game_cut - 1:
                         input_times += temp_times
                         break
             except:
@@ -172,14 +171,14 @@ def parse_times():
             game_number += 1
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_times,"masters_times.txt")
+    print_to_file(input_times, "atleast2400s_400diff_above2000elo/masters_times.txt")
 
 
 def parse_taken():
     input_taken = []
     game_number = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             try:
                 temp_taken = []
@@ -197,9 +196,9 @@ def parse_taken():
                 pass
             print(f" game number {game_number}")
             game_number += 1
-            game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+            game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_taken, "masters_taken.txt")
+    print_to_file(input_taken, "atleast2400s_400diff_above2000elo/masters_taken.txt")
 
 
 def parse_moves_num():
@@ -207,11 +206,11 @@ def parse_moves_num():
     game_num = 0
 
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             try:
                 temp_count = []
-                for i,_ in enumerate(game.mainline()):
+                for i, _ in enumerate(game.mainline()):
                     if i < first_game_cut:
                         continue
                     temp_count.append(i)
@@ -225,7 +224,7 @@ def parse_moves_num():
             game_num += 1
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(moves_num,"masters_moves.txt")
+    print_to_file(moves_num, "atleast2400s_400diff_above2000elo/masters_moves.txt")
 
 
 def parse_material_diff():
@@ -239,7 +238,7 @@ def parse_material_diff():
     input_values = []
     game_num = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             temp_count = []
             white_turn = True
@@ -270,17 +269,16 @@ def parse_material_diff():
             print(f"game number {game_num}")
             game_num += 1
 
-            game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+            game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-
-    print_to_file(input_values, "masters_materials.txt")
+    print_to_file(input_values, "atleast2400s_400diff_above2000elo/masters_materials.txt")
 
 
 def parse_times_of_enemy():
     input_times = []
     game_number = 0
     with open(gamefile) as pgn:
-        game = read_relevant_game(chess.pgn.read_game(pgn),pgn)
+        game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
         while game:
             try:
                 temp_times = []
@@ -301,10 +299,10 @@ def parse_times_of_enemy():
             game_number += 1
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
-    print_to_file(input_times, "masters_times_of_enemy.txt")
+    print_to_file(input_times, "atleast2400s_400diff_above2000elo/masters_times_of_enemy.txt")
 
 
-# parse_times_of_enemy() # 26339 ---
+# parse_times_of_enemy() # 26339
 # parse_times() #28780 done 214246
 # parse_clock() #28780 done 214246
 # parse_taken() #28780 done 214246
@@ -312,7 +310,6 @@ def parse_times_of_enemy():
 # parse_material_diff() #28780 done 214246
 # parse_moves_num() #28780 done 214246
 # parse_moves_available() #28780 done 214246
-
 
 
 def parse_position():

@@ -2,8 +2,8 @@ from chess.pgn import read_game
 from timeit import default_timer as timer
 
 
-full_pgn = open("lichess_db_standard_rated_2021-01.pgn")
-new_pgn = open("atleast2400sec_400diff_above2000.pgn", "w")
+full_pgn = open("old pgns/lichess_db_standard_rated_2021-01.pgn")
+new_pgn = open("atleast2400s_400diff_above2000elo/atleast2400sec_400diff_above2000.pgn", "w")
 
 game = read_game(full_pgn)
 skipped, i, j = 0, 0, 0

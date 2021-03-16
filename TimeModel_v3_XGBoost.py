@@ -92,4 +92,9 @@ def nnTrain(clock_path,move_num_path,threats_path, moves_available_path, taken_p
         print(f'prediction = {int(i)}   label = {int(j)}')
     print("Accuracy: %.2f%%" % (accuracy * 100.0))
 
-nnTrain('masters_clock.txt','masters_moves.txt','masters_threats.txt', 'masters_available_moves.txt', 'masters_taken.txt','masters_materials.txt', 'masters_times.txt')
+nnTrain('atleast2400s_400diff_above2000elo/masters_clock.txt', 'atleast2400s_400diff_above2000elo/masters_moves.txt',
+        'atleast2400s_400diff_above2000elo/masters_threats.txt',
+        'atleast2400s_400diff_above2000elo/masters_available_moves.txt',
+        'atleast2400s_400diff_above2000elo/masters_taken.txt',
+        'atleast2400s_400diff_above2000elo/masters_materials.txt',
+        'atleast2400s_400diff_above2000elo/masters_times.txt')

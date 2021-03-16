@@ -1,5 +1,4 @@
 from chess.pgn import read_game
-from timeit import default_timer as timer
 
 
 def number_of_moves_in_game(game):
@@ -10,8 +9,8 @@ def number_of_moves_in_game(game):
     return counter
 
 
-full_pgn = open("atleast2400sec_400diff_above2000.pgn")
-new_pgn = open("masters3.pgn", "w")
+full_pgn = open("atleast2400s_400diff_above2000elo/atleast2400sec_400diff_above2000.pgn")
+new_pgn = open("atleast2400s_400diff_above2000elo/masters3.pgn", "w")
 
 game = read_game(full_pgn)
 while game is not None:
