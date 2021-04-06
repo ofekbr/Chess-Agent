@@ -53,8 +53,27 @@ def parse_moves_available():
         game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
         while game:
-            #
-            #
+            try:
+                board = game.board()
+                temp_moves_available = []
+
+                for i, move in enumerate(game.mainline_moves()):
+                    if i < first_game_cut:
+                        board.push(move)
+                        continue
+
+                    temp_moves_available.append(board.legal_moves.count())
+                    board.push(move)
+
+                    if i >= last_game_cut - 1:
+                        input_moves_available += temp_moves_available
+                        break
+            except:
+                pass
+
+            print(f" game number {game_number}")
+            game_number += 1
+
             game = read_relevant_game(chess.pgn.read_game(pgn), pgn)
 
     print_to_file(input_moves_available, "atleast2400s_400diff_above2000elo/masters_available_moves.txt")
