@@ -88,13 +88,13 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
     my_dataset = data.TensorDataset(tensor_games, tensor_times)
 
     model = NeuralNetwork()
-    training_data, validation_data = data.random_split(my_dataset, [2900, 400])
+    training_data, validation_data = data.random_split(my_dataset, [180000, 34246])
     train_loader = data.DataLoader(training_data, batch_size=64, shuffle=True)
     val_loader = data.DataLoader(validation_data, batch_size=128, shuffle=True)
     learning_rate = 0.0005
     epochs = 10
     optimizer = optim.Adam(model.parameters(), learning_rate)
-    weight = torch.tensor([6.2, 1.0])
+    weight = torch.tensor([1.0, 1.0])
     criterion = nn.NLLLoss(weight=weight)
 
     # sum = 0
@@ -167,7 +167,8 @@ def nnTrain(threats_path, moves_available_path, clock_path, taken_path, move_num
 
 nnTrain('atleast2400s_400diff_above2000elo/masters_threats.txt',
         'atleast2400s_400diff_above2000elo/masters_available_moves.txt',
-        'atleast2400s_400diff_above2000elo/masters_clock.txt', 'atleast2400s_400diff_above2000elo/masters_taken.txt',
+        'atleast2400s_400diff_above2000elo/masters_clock.txt',
+        'atleast2400s_400diff_above2000elo/masters_taken.txt',
         'atleast2400s_400diff_above2000elo/masters_moves.txt',
         'atleast2400s_400diff_above2000elo/masters_materials.txt',
         'atleast2400s_400diff_above2000elo/masters_times.txt')

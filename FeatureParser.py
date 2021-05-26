@@ -302,14 +302,14 @@ def parse_times_of_enemy():
     print_to_file(input_times, "atleast2400s_400diff_above2000elo/masters_times_of_enemy.txt")
 
 
-# parse_times_of_enemy() # 26339
-# parse_times() #28780 done 214246
-# parse_clock() #28780 done 214246
-# parse_taken() #28780 done 214246
-# parse_threats()  #28780 done 214246
-# parse_material_diff() #28780 done 214246
-# parse_moves_num() #28780 done 214246
-# parse_moves_available() #28780 done 214246
+# parse_times_of_enemy()
+# parse_times()
+# parse_clock()
+# parse_taken()
+# parse_threats()
+# parse_material_diff()
+# parse_moves_num()
+# parse_moves_available()
 
 
 def parse_position():
